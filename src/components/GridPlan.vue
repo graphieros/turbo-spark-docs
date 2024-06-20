@@ -273,6 +273,7 @@ function resizeEntity(coordinates) {
             :fill="config.entityFill" 
             @mousedown="isDown = true" 
             @touchstart="isDown = true"
+            :class="{ 'selected' : isDown }"
         />
 
         <!-- HANDLES -->
@@ -315,8 +316,12 @@ function resizeEntity(coordinates) {
     </svg>
 </template>
 
-<style>
+<style scoped>
 svg {
     border: 1px solid grey;
+}
+
+rect {
+    transition: all 0.05s ease-in-out;
 }
 </style>
