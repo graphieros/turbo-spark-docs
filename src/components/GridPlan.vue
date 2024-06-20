@@ -39,6 +39,16 @@ const props = defineProps({
     }
 })
 
+const config = ref({
+    gridFill: '#3A3A3A',
+    gridStroke: '#000000',
+    gridStrokeWidth: 0.02,
+    wallFill: '#8A8A8A',
+    entityFill: '#6376DD',
+    handleFill: '#FFFFFF',
+    handleSize: 0.3
+})
+
 const emit = defineEmits(['change'])
 
 const width = ref(props.gridSize.w);
@@ -239,8 +249,9 @@ function resizeEntity(coordinates) {
             :y="rect.y"
             :height="1"
             :width="1"
-            :stroke="'white'"
-            stroke-width="0.01"
+            :stroke="config.gridStroke"
+            :stroke-width="config.gridStrokeWidth"
+            :fill="config.gridFill"
         />
 
         <!-- WALLS -->
@@ -250,7 +261,7 @@ function resizeEntity(coordinates) {
             :y="wall.y"
             :height="1"
             :width="1"
-            fill="grey"
+            :fill="config.wallFill"
         />
 
         <!-- ACTIVE ENTITY -->
@@ -259,45 +270,45 @@ function resizeEntity(coordinates) {
             :y="entity.y" 
             :width="entity.w" 
             :height="entity.h" 
-            fill="indigo" 
+            :fill="config.entityFill" 
             @mousedown="isDown = true" 
             @touchstart="isDown = true"
         />
 
         <!-- HANDLES -->
         <rect 
-            :x="entity.x - 0.15" 
-            :y="entity.y - 0.15" 
+            :x="entity.x - config.handleSize / 2" 
+            :y="entity.y - config.handleSize / 2" 
             fill="white" 
-            :height="0.3" 
-            :width="0.3" 
+            :height="config.handleSize" 
+            :width="config.handleSize" 
             @mousedown.prevent="startResize('top-left')"
             @touchstart.prevent="startResize('top-left')"
         />
         <rect 
-            :x="entity.x + entity.w - 0.15" 
-            :y="entity.y - 0.15" 
+            :x="entity.x + entity.w - config.handleSize / 2" 
+            :y="entity.y - config.handleSize / 2" 
             fill="white" 
-            :height="0.3" 
-            :width="0.3" 
+            :height="config.handleSize" 
+            :width="config.handleSize" 
             @mousedown.prevent="startResize('top-right')"
             @touchstart.prevent="startResize('top-right')"
         />
         <rect 
-            :x="entity.x - 0.15" 
-            :y="entity.y + entity.h - 0.15" 
+            :x="entity.x - config.handleSize / 2" 
+            :y="entity.y + entity.h - config.handleSize / 2" 
             fill="white" 
-            :height="0.3" 
-            :width="0.3" 
+            :height="config.handleSize" 
+            :width="config.handleSize" 
             @mousedown.prevent="startResize('bottom-left')"
             @touchstart.prevent="startResize('bottom-left')"
         />
         <rect 
-            :x="entity.x + entity.w - 0.15" 
-            :y="entity.y + entity.h - 0.15" 
+            :x="entity.x + entity.w - config.handleSize / 2" 
+            :y="entity.y + entity.h - config.handleSize / 2" 
             fill="white" 
-            :height="0.3" 
-            :width="0.3" 
+            :height="config.handleSize" 
+            :width="config.handleSize" 
             @mousedown.prevent="startResize('bottom-right')"
             @touchstart.prevent="startResize('bottom-right')"
         />
