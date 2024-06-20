@@ -147,9 +147,7 @@ function move(e) {
         const newY = Math.round(coordinates.y - entity.value.h / 2);
 
         if (isColliding(newX, newY, entity.value.w, entity.value.h)) return;
-        if (newX + entity.value.w > width.value) return;
-        if (newY + entity.value.h > height.value) return;
-        if (newX < 0 || newY < 0) return;
+        if (isOverflowing(newX, newY, entity.value.w, entity.value.h)) return;
 
         entity.value.x = newX;
         entity.value.y = newY;
@@ -166,8 +164,11 @@ function isColliding(x, y, w, h) {
             }
         }
     }
-
     return false;
+}
+
+function isOverflowing(x, y, w, h) {
+    return x + w > width.value || y + h > height.value || x < 0 || y < 0;
 }
 
 function drop() {
@@ -224,7 +225,7 @@ function resizeEntity(coordinates) {
 </script>
 
 <template>
-    <svg :viewBox="`0 0 ${width} ${height}`" width="100%" ref="SVG" @mousemove="move" @mouseup="drop">
+    <svg :viewBox="`0 0 ${width} ${height}`" width="100%" ref="SVG" @mousemove="move" @mouseup="drop" @mouseleave="drop">
         <!-- GRID -->
         <rect 
             v-for="rect in gridRects" 
