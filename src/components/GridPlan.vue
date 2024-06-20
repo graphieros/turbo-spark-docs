@@ -225,7 +225,7 @@ function resizeEntity(coordinates) {
 </script>
 
 <template>
-    <svg :viewBox="`0 0 ${width} ${height}`" width="100%" ref="SVG" @mousemove="move" @mouseup="drop" @mouseleave="drop">
+    <svg :viewBox="`0 0 ${width} ${height}`" width="100%" ref="SVG" @mousemove="move" @mouseup="drop">
         <!-- GRID -->
         <rect 
             v-for="rect in gridRects" 
