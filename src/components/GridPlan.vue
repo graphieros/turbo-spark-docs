@@ -119,8 +119,13 @@ const initialDimensions = ref({ x: 0, y: 0, w: 0, h: 0 });
 
 function getSVGCoords(evt, svg) {
     const pt = svg.createSVGPoint();
-    pt.x = evt.clientX;
-    pt.y = evt.clientY;
+    if (evt.touches && evt.touches.length) {
+        pt.x = evt.touches[0].clientX;
+        pt.y = evt.touches[0].clientY;
+    } else {
+        pt.x = evt.clientX;
+        pt.y = evt.clientY;
+    }
 
     const svgMatrix = svg.getScreenCTM();
     const transformedPt = pt.matrixTransform(svgMatrix.inverse());
@@ -133,6 +138,8 @@ function getSVGCoords(evt, svg) {
 
 function move(e) {
     if (!isDown.value) return;
+
+    e.preventDefault();
 
     const coordinates = getSVGCoords(e, SVG.value);
     const rounded = {
@@ -152,8 +159,6 @@ function move(e) {
         entity.value.x = newX;
         entity.value.y = newY;
     }
-
-    
 }
 
 function isColliding(x, y, w, h) {
@@ -171,10 +176,10 @@ function isOverflowing(x, y, w, h) {
     return x + w > width.value || y + h > height.value || x < 0 || y < 0;
 }
 
-function drop() {
+function drop(e) {
     isDown.value = false;
     resizingHandle.value = null;
-    emit('change', entity.value)
+    emit('change', entity.value);
 }
 
 function startResize(handle) {
@@ -225,7 +230,8 @@ function resizeEntity(coordinates) {
 </script>
 
 <template>
-    <svg :viewBox="`0 0 ${width} ${height}`" width="100%" ref="SVG" @mousemove="move" @mouseup="drop">
+    <svg :viewBox="`0 0 ${width} ${height}`" width="100%" ref="SVG" @mousemove="move" @mouseup="drop" @touchmove="move" 
+        @touchend="drop">
         <!-- GRID -->
         <rect 
             v-for="rect in gridRects" 
@@ -255,6 +261,7 @@ function resizeEntity(coordinates) {
             :height="entity.h" 
             fill="indigo" 
             @mousedown="isDown = true" 
+            @touchstart="isDown = true"
         />
 
         <!-- HANDLES -->
@@ -265,6 +272,7 @@ function resizeEntity(coordinates) {
             :height="0.3" 
             :width="0.3" 
             @mousedown.prevent="startResize('top-left')"
+            @touchstart.prevent="startResize('top-left')"
         />
         <rect 
             :x="entity.x + entity.w - 0.15" 
@@ -273,6 +281,7 @@ function resizeEntity(coordinates) {
             :height="0.3" 
             :width="0.3" 
             @mousedown.prevent="startResize('top-right')"
+            @touchstart.prevent="startResize('top-right')"
         />
         <rect 
             :x="entity.x - 0.15" 
@@ -281,6 +290,7 @@ function resizeEntity(coordinates) {
             :height="0.3" 
             :width="0.3" 
             @mousedown.prevent="startResize('bottom-left')"
+            @touchstart.prevent="startResize('bottom-left')"
         />
         <rect 
             :x="entity.x + entity.w - 0.15" 
@@ -289,6 +299,7 @@ function resizeEntity(coordinates) {
             :height="0.3" 
             :width="0.3" 
             @mousedown.prevent="startResize('bottom-right')"
+            @touchstart.prevent="startResize('bottom-right')"
         />
     </svg>
 </template>
