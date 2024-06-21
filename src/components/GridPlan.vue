@@ -351,7 +351,7 @@ function resizeEntity(coordinates) {
             fill="transparent"
         />
 
-        <!-- <rect 
+        <rect 
             v-for="placedItem in items"
             :x="placedItem.x"
             :y="placedItem.y"
@@ -359,19 +359,7 @@ function resizeEntity(coordinates) {
             :width="placedItem.w"
             :fill="placedItem.color"
             @click="selectItem(placedItem)"
-        /> -->
-        <foreignObject 
-            v-for="placedItem in items"
-            :x="placedItem.x"
-            :y="placedItem.y"
-            :height="placedItem.h"
-            :width="placedItem.w"
-            @click="selectItem(placedItem)"
-        >
-            <div :style="`font-size: 0.05rem;height:100%; width: 100%; background:${placedItem.color}; display:flex; align-items:center; justify-content:center;`">
-                <slot name="componentItem" v-bind="{placedItem}"/>
-            </div>
-        </foreignObject>
+        />
 
         <!-- ACTIVE ENTITY -->
         <rect
@@ -385,6 +373,18 @@ function resizeEntity(coordinates) {
             @touchstart="isDown = true"
             :class="{ 'selected' : isDown }"
         />
+
+        <text 
+            v-for="placedItem in [...items, entity]"
+            :x="placedItem.x + placedItem.w / 2"
+            :y="placedItem.y + placedItem.h / 2 + 0.2"
+            :font-size="0.6"
+            :fill="'black'"
+            style="pointer-events: none;"
+            text-anchor="middle"
+        >
+            <slot name="componentItem" v-bind="{placedItem}"/>
+        </text>
 
         <!-- HANDLES -->
         <g v-if="activeEntity && activeEntity.x !== undefined">
