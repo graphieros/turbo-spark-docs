@@ -17,7 +17,6 @@ const entity = ref({
 const step = ref(0);
 
 function selectItem(item) {
-  console.log(item)
   entity.value = item;
   step.value += 1;
 }
@@ -49,6 +48,11 @@ const availableTypes = ref([
     color: '#3366DD',
     description: 'component',
     icon: 'C'
+  },
+  {
+    color: "#DD6633",
+    description: "power",
+    icon: 'P'
   }
 ])
 
@@ -56,6 +60,13 @@ const activeType = ref(availableTypes.value[0])
 
 function setActiveType(t) {
   activeType.value = t;
+}
+
+function deleteItem(item) {
+  console.log(item)
+  items.value = items.value.filter(i => i.id !== item.id)
+  entity.value = {}
+  step.value += 1
 }
 
 </script>
@@ -73,7 +84,8 @@ function setActiveType(t) {
       :active-entity="entity" 
       @change="recordChange" 
       @selectItem="selectItem"
-      @triggerAction="triggerAction"  
+      @triggerAction="triggerAction"
+      @delete="deleteItem"  
     >
     <template #componentItem="{ placedItem }">
       {{ placedItem.icon }}

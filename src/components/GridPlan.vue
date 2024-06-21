@@ -52,7 +52,7 @@ const config = ref({
     sizeRatio: 10
 })
 
-const emit = defineEmits(['change', 'selectItem', 'triggerAction'])
+const emit = defineEmits(['change', 'selectItem', 'triggerAction', 'delete'])
 
 function selectItem(item) {
     emit('selectItem', item)
@@ -281,6 +281,11 @@ function resizeEntity(coordinates) {
         entity.value.h = newH;
     }
 }
+
+function deleteEntity() {
+    emit('delete', entity.value)
+}
+
 </script>
 
 <template>
@@ -425,6 +430,39 @@ function resizeEntity(coordinates) {
                 @touchstart.prevent="startResize('bottom-right')"
             />
         </g>
+
+        <!-- BUTTONS -->
+        <circle 
+            v-if="activeEntity && activeEntity.x"
+            :cx="entity.x + entity.w - 0.5"
+            :cy="entity.y - 1"
+            :r="0.5"
+            :fill="'#CCCCCC66'"
+            @click="deleteEntity"
+            style="cursor: pointer"
+        />
+            <line
+                v-if="activeEntity && activeEntity.x"
+                :x1="entity.x + entity.w - 0.75"
+                :x2="entity.x + entity.w - 0.25"
+                :y1="entity.y - 0.75"
+                :y2="entity.y - 1.25"
+                :stroke="'white'"
+                :stroke-width="0.09"
+                stroke-linecap="round"
+                style="pointer-events: none;"
+            />
+            <line
+                v-if="activeEntity && activeEntity.x"
+                :x2="entity.x + entity.w - 0.75"
+                :x1="entity.x + entity.w - 0.25"
+                :y1="entity.y - 0.75"
+                :y2="entity.y - 1.25"
+                :stroke="'white'"
+                :stroke-width="0.09"
+                stroke-linecap="round"
+                style="pointer-events: none;"
+            />
     </svg>
 </template>
 
