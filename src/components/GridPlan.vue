@@ -55,6 +55,10 @@ const config = ref({
     tooltipColor: '#FFFFFF',
     iconColor: '#1A1A1A',
     gridHighlightColor: '#FFFFFF',
+    coordinatesColor: '#8A8A8A',
+    coordinatesBackground: '#2A2A2A',
+    showCrosshair: true,
+    crosshairBackground: '#4A4A4A'
 })
 
 const slots = useSlots();
@@ -351,46 +355,86 @@ const highlightedTooltipPosition = computed(() => {
     <svg :viewBox="`-1 -1 ${width+2} ${height+2}`" width="100%" ref="SVG" @mousemove="move" @mouseup="drop" @touchmove="move" 
         @touchend="drop" style="overflow: visible;">
         <!-- GRID COORDINATES -->
-        <text 
-            v-for="(absCord, i) in gridCoordinates.abs"
-            :x="i + 0.5"
-            :y="-0.3"
-            text-anchor="middle"
-            fill="white"
-            font-size="0.5"
-        >
-            {{ absCord }}
-        </text>
-        <text 
-            v-for="(absCord, i) in gridCoordinates.abs"
-            :x="i + 0.5"
-            :y="gridSize.h+0.7"
-            text-anchor="middle"
-            fill="white"
-            font-size="0.5"
-        >
-            {{ absCord }}
-        </text>
-        <text 
-            v-for="(ordCord, i) in gridCoordinates.ord"
-            :x="-0.1"
-            :y="i + 0.7"
-            text-anchor="end"
-            fill="white"
-            font-size="0.5"
-        >
-            {{ ordCord }}
-        </text>
-        <text 
-            v-for="(ordCord, i) in gridCoordinates.ord"
-            :x="gridSize.w + 0.1"
-            :y="i + 0.7"
-            text-anchor="start"
-            fill="white"
-            font-size="0.5"
-        >
-            {{ ordCord }}
-        </text>
+        <g v-for="(absCord, i) in gridCoordinates.abs">
+            <rect
+                :x="i"
+                :y="-1"
+                :height="1"
+                :width="1"
+                :fill="config.coordinatesBackground"
+                :stroke="config.gridStroke"
+                :stroke-width="config.gridStrokeWidth"
+            />       
+            <text 
+                :x="i + 0.5"
+                :y="-0.3"
+                text-anchor="middle"
+                :fill="config.coordinatesColor"
+                font-size="0.5"
+            >
+                {{ absCord }}
+            </text>
+        </g>
+        <g v-for="(absCord, i) in gridCoordinates.abs">
+            <rect
+                :x="i"
+                :y="gridSize.h"
+                :height="1"
+                :width="1"
+                :fill="config.coordinatesBackground"
+                :stroke="config.gridStroke"
+                :stroke-width="config.gridStrokeWidth"
+            />  
+            <text 
+                :x="i + 0.5"
+                :y="gridSize.h+0.7"
+                text-anchor="middle"
+                :fill="config.coordinatesColor"
+                font-size="0.5"
+            >
+                {{ absCord }}
+            </text>
+        </g>
+        <g v-for="(ordCord, i) in gridCoordinates.ord">
+            <rect
+                :x="-1"
+                :y="i"
+                :height="1"
+                :width="1"
+                :fill="config.coordinatesBackground"
+                :stroke="config.gridStroke"
+                :stroke-width="config.gridStrokeWidth"
+            />  
+            <text
+                :x="-0.1"
+                :y="i + 0.7"
+                text-anchor="end"
+                :fill="config.coordinatesColor"
+                font-size="0.5"
+            >
+                {{ ordCord }}
+            </text>
+        </g>
+        <g v-for="(ordCord, i) in gridCoordinates.ord">
+            <rect
+                :x="gridSize.w"
+                :y="i"
+                :height="1"
+                :width="1"
+                :fill="config.coordinatesBackground"
+                :stroke="config.gridStroke"
+                :stroke-width="config.gridStrokeWidth"
+            />  
+            <text 
+                :x="gridSize.w + 0.1"
+                :y="i + 0.7"
+                text-anchor="start"
+                :fill="config.coordinatesColor"
+                font-size="0.5"
+            >
+                {{ ordCord }}
+            </text>
+        </g>
 
         <!-- GRID RECTS -->
         <rect 
@@ -401,7 +445,7 @@ const highlightedTooltipPosition = computed(() => {
             :width="1"
             :stroke="config.gridStroke"
             :stroke-width="config.gridStrokeWidth"
-            :fill="config.gridFill"
+            :fill="hoveredRect && !isDown && (hoveredRect.x === rect.x || hoveredRect.y === rect.y) ? config.crosshairBackground : config.gridFill"
             @click="triggerAction(rect)"
             @mouseover="hoveredRect = rect"
             @mouseleave="hoveredRect = null"
