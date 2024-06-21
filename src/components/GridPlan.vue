@@ -1,5 +1,5 @@
 <script setup>
-import { computed, ref, onMounted, onUnmounted } from 'vue';
+import { computed, ref, onMounted, onUnmounted, useSlots } from 'vue';
 
 const props = defineProps({
     /**
@@ -56,6 +56,8 @@ const config = ref({
     iconColor: '#1A1A1A',
     gridHighlightColor: '#FFFFFF',
 })
+
+const slots = useSlots();
 
 const emit = defineEmits(['change', 'selectItem', 'triggerAction', 'delete', 'unselect'])
 
@@ -515,7 +517,7 @@ const highlightedTooltipPosition = computed(() => {
 
         <g v-for="placedItem in [...items, entity]">
             <text 
-                v-if="placedItem.x !== undefined"
+                v-if="placedItem.x !== undefined && slots.componentText"
                 :x="placedItem.x + placedItem.w / 2"
                 :y="placedItem.y + placedItem.h / 2 + 0.2"
                 :font-size="0.6"
@@ -523,8 +525,20 @@ const highlightedTooltipPosition = computed(() => {
                 style="pointer-events: none;"
                 text-anchor="middle"
             >
-                <slot name="componentItem" v-bind="{placedItem, iconColor: config.iconColor}"/>
+                <slot name="componentText" v-bind="{placedItem, iconColor: config.iconColor}"/>
             </text>
+            <foreignObject
+                v-if="placedItem.x !== undefined && slots.componentIcon"
+                :x="placedItem.x"
+                :y="placedItem.y"
+                :height="placedItem.h"
+                :width="placedItem.w"
+                style="pointer-events: none;"
+            >
+                <div style="width: 100%; height:100%; position: relative;">
+                    <slot name="componentIcon" v-bind="{ placedItem, iconColor: config.iconColor, maxSize: Math.min(placedItem.w, placedItem.h) }"/>
+                </div>
+            </foreignObject>
         </g>
 
         <!-- HANDLES -->
