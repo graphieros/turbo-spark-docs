@@ -6,8 +6,8 @@ const props = defineProps({
      * Already placed elements on the grid (walls, other entities...)
      * @example
      * [
-     *  { x: 1, y: 1, w: 2, h: 3 },
-     *  { x: 1, y: 4, w: 2, h: 3 },
+     *  { x: 1, y: 1, w: 2, h: 3, color: "#FF0000" },
+     *  { x: 1, y: 4, w: 2, h: 3, color: "#FF0000" },
      * ]
      */
     items: {
@@ -20,7 +20,7 @@ const props = defineProps({
      * The active entity that can be moved and resized on available space
      * If none provided, the item will be positioned on the first available square
      * @example
-     * { x: 1, y: 1, w: 1, h: 1 }
+     * { x: 1, y: 1, w: 1, h: 1, "#FF0000" }
      */
     activeEntity: {
         type: Object,
@@ -33,7 +33,9 @@ const props = defineProps({
         default() {
             return {
                 w: 20,
-                h: 20
+                h: 20,
+                hType: 'numeric',
+                wType: 'alpha'
             }
         }
     }
@@ -44,12 +46,21 @@ const config = ref({
     gridStroke: '#000000',
     gridStrokeWidth: 0.02,
     wallFill: '#8A8A8A',
-    entityFill: '#6376DD',
+    entityFill: props.activeEntity.color,
     handleFill: '#FFFFFF',
-    handleSize: 0.3
+    handleSize: 0.3,
+    sizeRatio: 10
 })
 
-const emit = defineEmits(['change'])
+const emit = defineEmits(['change', 'selectItem', 'triggerAction'])
+
+function selectItem(item) {
+    emit('selectItem', item)
+}
+
+function triggerAction(rect) {
+    emit('triggerAction', rect)
+}
 
 const width = ref(props.gridSize.w);
 const height = ref(props.gridSize.h);
@@ -70,7 +81,6 @@ const gridRects = computed(() => {
 
 function convertElementsToIndividualWalls(element) {
     const walls = [];
-
     element.forEach(coordinates => {
         for (let i = 0; i < coordinates.h; i += 1) {
             for (let j = 0; j < coordinates.w; j += 1) {
@@ -81,9 +91,43 @@ function convertElementsToIndividualWalls(element) {
             }
         }
     });
-
     return walls;
 }
+
+function numberToLetters(num) {
+    let letters = '';
+    while (num > 0) {
+        let remainder = (num - 1) % 26;
+        letters = String.fromCharCode(65 + remainder) + letters;
+        num = Math.floor((num - 1) / 26);
+    }
+    return letters;
+}
+
+const gridCoordinates = computed(() => {
+    const abs = [];
+    const ord = [];
+
+    for (let i = 1; i <= props.gridSize.w; i += 1) {
+        if (props.gridSize.wType === 'alpha') {
+            abs.push(numberToLetters(i));
+        } else {
+            abs.push(i);
+        }
+    }
+    for (let i = 1; i <= props.gridSize.h; i += 1) {
+        if (props.gridSize.hType === 'alpha') {
+            ord.push(numberToLetters(i));  
+        } else {
+            ord.push(i);
+        }
+    }
+
+    return {
+        abs,
+        ord
+    };
+});
 
 function findFirstAvailableSquare(gridWidth, gridHeight, occupiedSquares) {
     const occupiedSet = new Set(
@@ -101,7 +145,7 @@ function findFirstAvailableSquare(gridWidth, gridHeight, occupiedSquares) {
     return null; // No available square found
 }
 
-const walls = ref(convertElementsToIndividualWalls(props.items))
+const walls = ref(convertElementsToIndividualWalls(props.items.filter(el => el.id !== props.activeEntity.id)))
 
 function computeEntityCoordinates() {
     if(!props.activeEntity.x || !props.activeEntity.y) {
@@ -121,7 +165,7 @@ function computeEntityCoordinates() {
     }
 }
 
-const entity = ref(computeEntityCoordinates())
+const entity = ref(props.activeEntity || {})
 
 const isDown = ref(false);
 const resizingHandle = ref(null);
@@ -240,9 +284,51 @@ function resizeEntity(coordinates) {
 </script>
 
 <template>
-    <svg :viewBox="`0 0 ${width} ${height}`" width="100%" ref="SVG" @mousemove="move" @mouseup="drop" @touchmove="move" 
+    <svg :viewBox="`-1 -1 ${width+2} ${height+2}`" width="100%" ref="SVG" @mousemove="move" @mouseup="drop" @touchmove="move" 
         @touchend="drop">
-        <!-- GRID -->
+        <!-- GRID COORDINATES -->
+        <text 
+            v-for="(absCord, i) in gridCoordinates.abs"
+            :x="i + 0.5"
+            :y="-0.3"
+            text-anchor="middle"
+            fill="white"
+            font-size="0.5"
+        >
+            {{ absCord }}
+        </text>
+        <text 
+            v-for="(absCord, i) in gridCoordinates.abs"
+            :x="i + 0.5"
+            :y="gridSize.h+0.7"
+            text-anchor="middle"
+            fill="white"
+            font-size="0.5"
+        >
+            {{ absCord }}
+        </text>
+        <text 
+            v-for="(ordCord, i) in gridCoordinates.ord"
+            :x="-0.1"
+            :y="i + 0.7"
+            text-anchor="end"
+            fill="white"
+            font-size="0.5"
+        >
+            {{ ordCord }}
+        </text>
+        <text 
+            v-for="(ordCord, i) in gridCoordinates.ord"
+            :x="gridSize.w + 0.1"
+            :y="i + 0.7"
+            text-anchor="start"
+            fill="white"
+            font-size="0.5"
+        >
+            {{ ordCord }}
+        </text>
+
+        <!-- GRID RECTS -->
         <rect 
             v-for="rect in gridRects" 
             :x="rect.x"
@@ -252,6 +338,7 @@ function resizeEntity(coordinates) {
             :stroke="config.gridStroke"
             :stroke-width="config.gridStrokeWidth"
             :fill="config.gridFill"
+            @click="triggerAction(rect)"
         />
 
         <!-- WALLS -->
@@ -261,11 +348,34 @@ function resizeEntity(coordinates) {
             :y="wall.y"
             :height="1"
             :width="1"
-            :fill="config.wallFill"
+            fill="transparent"
         />
 
+        <!-- <rect 
+            v-for="placedItem in items"
+            :x="placedItem.x"
+            :y="placedItem.y"
+            :height="placedItem.h"
+            :width="placedItem.w"
+            :fill="placedItem.color"
+            @click="selectItem(placedItem)"
+        /> -->
+        <foreignObject 
+            v-for="placedItem in items"
+            :x="placedItem.x"
+            :y="placedItem.y"
+            :height="placedItem.h"
+            :width="placedItem.w"
+            @click="selectItem(placedItem)"
+        >
+            <div :style="`font-size: 0.05rem;height:100%; width: 100%; background:${placedItem.color}; display:flex; align-items:center; justify-content:center;`">
+                <slot name="componentItem" v-bind="{placedItem}"/>
+            </div>
+        </foreignObject>
+
         <!-- ACTIVE ENTITY -->
-        <rect 
+        <rect
+            v-if="activeEntity && activeEntity.x !== undefined"
             :x="entity.x" 
             :y="entity.y" 
             :width="entity.w" 
@@ -277,42 +387,44 @@ function resizeEntity(coordinates) {
         />
 
         <!-- HANDLES -->
-        <rect 
-            :x="entity.x - config.handleSize / 2" 
-            :y="entity.y - config.handleSize / 2" 
-            fill="white" 
-            :height="config.handleSize" 
-            :width="config.handleSize" 
-            @mousedown.prevent="startResize('top-left')"
-            @touchstart.prevent="startResize('top-left')"
-        />
-        <rect 
-            :x="entity.x + entity.w - config.handleSize / 2" 
-            :y="entity.y - config.handleSize / 2" 
-            fill="white" 
-            :height="config.handleSize" 
-            :width="config.handleSize" 
-            @mousedown.prevent="startResize('top-right')"
-            @touchstart.prevent="startResize('top-right')"
-        />
-        <rect 
-            :x="entity.x - config.handleSize / 2" 
-            :y="entity.y + entity.h - config.handleSize / 2" 
-            fill="white" 
-            :height="config.handleSize" 
-            :width="config.handleSize" 
-            @mousedown.prevent="startResize('bottom-left')"
-            @touchstart.prevent="startResize('bottom-left')"
-        />
-        <rect 
-            :x="entity.x + entity.w - config.handleSize / 2" 
-            :y="entity.y + entity.h - config.handleSize / 2" 
-            fill="white" 
-            :height="config.handleSize" 
-            :width="config.handleSize" 
-            @mousedown.prevent="startResize('bottom-right')"
-            @touchstart.prevent="startResize('bottom-right')"
-        />
+        <g v-if="activeEntity && activeEntity.x !== undefined">
+            <rect 
+                :x="entity.x - config.handleSize / 2" 
+                :y="entity.y - config.handleSize / 2" 
+                fill="white" 
+                :height="config.handleSize" 
+                :width="config.handleSize" 
+                @mousedown.prevent="startResize('top-left')"
+                @touchstart.prevent="startResize('top-left')"
+            />
+            <rect 
+                :x="entity.x + entity.w - config.handleSize / 2" 
+                :y="entity.y - config.handleSize / 2" 
+                fill="white" 
+                :height="config.handleSize" 
+                :width="config.handleSize" 
+                @mousedown.prevent="startResize('top-right')"
+                @touchstart.prevent="startResize('top-right')"
+            />
+            <rect 
+                :x="entity.x - config.handleSize / 2" 
+                :y="entity.y + entity.h - config.handleSize / 2" 
+                fill="white" 
+                :height="config.handleSize" 
+                :width="config.handleSize" 
+                @mousedown.prevent="startResize('bottom-left')"
+                @touchstart.prevent="startResize('bottom-left')"
+            />
+            <rect 
+                :x="entity.x + entity.w - config.handleSize / 2" 
+                :y="entity.y + entity.h - config.handleSize / 2" 
+                fill="white" 
+                :height="config.handleSize" 
+                :width="config.handleSize" 
+                @mousedown.prevent="startResize('bottom-right')"
+                @touchstart.prevent="startResize('bottom-right')"
+            />
+        </g>
     </svg>
 </template>
 
