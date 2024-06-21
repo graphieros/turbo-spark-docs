@@ -295,7 +295,7 @@ function resizeEntity(coordinates) {
             break;
     }
 
-    if (!isColliding(newX, newY, newW, newH)) {
+    if (!isColliding(newX, newY, newW, newH) && !isOverflowing(newX, newY, newW, newH)) {
         entity.value.x = newX;
         entity.value.y = newY;
         entity.value.w = newW;
