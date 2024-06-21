@@ -8,6 +8,7 @@ const items = ref([
 ])
 
 function recordChange(entity) {
+  console.log('RECORD CHANGE')
   console.log(entity)
 }
 
@@ -63,8 +64,12 @@ function setActiveType(t) {
 }
 
 function deleteItem(item) {
-  console.log(item)
   items.value = items.value.filter(i => i.id !== item.id)
+  entity.value = {}
+  step.value += 1
+}
+
+function unselect() {
   entity.value = {}
   step.value += 1
 }
@@ -85,7 +90,8 @@ function deleteItem(item) {
       @change="recordChange" 
       @selectItem="selectItem"
       @triggerAction="triggerAction"
-      @delete="deleteItem"  
+      @delete="deleteItem"
+      @unselect="unselect"
     >
     <template #componentItem="{ placedItem }">
       {{ placedItem.icon }}

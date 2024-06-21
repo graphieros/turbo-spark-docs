@@ -1,5 +1,5 @@
 <script setup>
-import { computed, ref } from 'vue';
+import { computed, ref, onMounted, onUnmounted } from 'vue';
 
 const props = defineProps({
     /**
@@ -53,10 +53,11 @@ const config = ref({
     useGradient: true,
     useShadow: true,
     tooltipColor: '#FFFFFF',
-    iconColor: '#1A1A1A'
+    iconColor: '#1A1A1A',
+    gridHighlightColor: '#FFFFFF',
 })
 
-const emit = defineEmits(['change', 'selectItem', 'triggerAction', 'delete'])
+const emit = defineEmits(['change', 'selectItem', 'triggerAction', 'delete', 'unselect'])
 
 function selectItem(item) {
     emit('selectItem', item)
@@ -65,6 +66,22 @@ function selectItem(item) {
 function triggerAction(rect) {
     emit('triggerAction', rect)
 }
+
+function unselect() {
+    emit('unselect')
+}
+
+function unselectOnKeypress(e) {
+    if (e.key === 'Escape') {
+        unselect()
+    }
+}
+
+onMounted(() => {
+    document.addEventListener('keydown', unselectOnKeypress);
+});
+
+onUnmounted(() => document.removeEventListener('keydown', unselectOnKeypress));
 
 const width = ref(props.gridSize.w);
 const height = ref(props.gridSize.h);
@@ -234,7 +251,7 @@ function isOverflowing(x, y, w, h) {
     return x + w > width.value || y + h > height.value || x < 0 || y < 0;
 }
 
-function drop(e) {
+function drop() {
     isDown.value = false;
     resizingHandle.value = null;
     emit('change', entity.value);
@@ -291,7 +308,39 @@ function deleteEntity() {
 }
 
 const activeEntityCoordinates = computed(() => {
+    if (entity.value.h === 1 && entity.value.w === 1) {
+        return `${gridCoordinates.value.abs[entity.value.x]}-${gridCoordinates.value.ord[entity.value.y]}`;
+    }
     return `${gridCoordinates.value.abs[entity.value.x]}-${gridCoordinates.value.ord[entity.value.y]}, ${gridCoordinates.value.abs[entity.value.x + entity.value.w - 1]}-${gridCoordinates.value.ord[entity.value.y + entity.value.h - 1]}`
+})
+
+const hoveredRect = ref(null)
+
+const highlightedCoordinates = computed(() => {
+    if(!hoveredRect.value) return ""
+    return `${gridCoordinates.value.abs[hoveredRect.value.x]}-${gridCoordinates.value.ord[hoveredRect.value.y]}`
+})
+
+const highlightedTooltipPosition = computed(() => {
+    if(!hoveredRect.value) return null;
+    let x = hoveredRect.value.x + 0.5, y = hoveredRect.value.y + 2, textAnchor = 'middle';
+    if (hoveredRect.value.x === 0) {
+        x = hoveredRect.value.x + 1.2;
+        y = hoveredRect.value.y + 0.7;
+        textAnchor = 'start'
+    } else if (hoveredRect.value.x === props.gridSize.w - 1) {
+        x = hoveredRect.value.x - 0.2;
+        y = hoveredRect.value.y + 0.7;
+        textAnchor = 'end'
+    }
+    if (hoveredRect.value.y === props.gridSize.h - 1) {
+        y = hoveredRect.value.y - 0.5;
+    }
+    return {
+        x,
+        y,
+        textAnchor
+    }
 })
 
 </script>
@@ -352,7 +401,32 @@ const activeEntityCoordinates = computed(() => {
             :stroke-width="config.gridStrokeWidth"
             :fill="config.gridFill"
             @click="triggerAction(rect)"
+            @mouseover="hoveredRect = rect"
+            @mouseleave="hoveredRect = null"
         />
+
+        <rect 
+            v-if="hoveredRect && !isDown"
+            style="pointer-events: none;"
+            :x="hoveredRect.x"
+            :y="hoveredRect.y"
+            :height="1"
+            :width="1"
+            :stroke="config.gridHighlightColor"
+            :stroke-width="config.gridStrokeWidth * 2"
+            :fill="'#FFFFFF20'"
+        />
+
+        <text
+            v-if="hoveredRect && !isDown"
+            :text-anchor="highlightedTooltipPosition.textAnchor"
+            :x="highlightedTooltipPosition.x"
+            :y="highlightedTooltipPosition.y"
+            :font-size="0.6"
+            :fill="config.gridHighlightColor"
+        >
+            {{ highlightedCoordinates }}
+        </text>
 
         <!-- WALLS -->
         <rect 
@@ -410,6 +484,7 @@ const activeEntityCoordinates = computed(() => {
             :stroke-width="config.gridStrokeWidth"
             @mousedown="isDown = true" 
             @touchstart="isDown = true"
+            @click="unselect"
             :class="{ 'shadow': config.useShadow, 'entity': true }"
             style="cursor: move"
         />
