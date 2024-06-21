@@ -28,7 +28,7 @@ function triggerAction(rect) {
     ...rect,
     h: 1,
     w: 1,
-    id: items.value.length + 1,
+    id: `${Date.now()}-${Math.random()}`,
     ...activeType.value
   });
   selectItem(items.value.at(-1))
@@ -79,7 +79,7 @@ function unselect() {
 <template>
   <main>
     <div class="flex flex-row gap-6 p-8">
-      <div v-for="t in availableTypes" :style="`background:${t.color}`" class="py-2 px-6 text-black cursor-pointer" @click="setActiveType(t)">
+      <div v-for="t in availableTypes" :style="`background:${t.color}; outline:${activeType.description === t.description ? '2px solid white' : 'none'}`" class="py-2 px-6 text-black cursor-pointer" @click="setActiveType(t)">
         {{ t.description }}
       </div>
     </div>
