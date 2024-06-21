@@ -43,13 +43,17 @@ const props = defineProps({
 
 const config = ref({
     gridFill: '#3A3A3A',
-    gridStroke: '#000000',
+    gridStroke: '#1A1A1A',
     gridStrokeWidth: 0.02,
     wallFill: '#8A8A8A',
     entityFill: props.activeEntity.color,
     handleFill: '#FFFFFF',
     handleSize: 0.3,
-    sizeRatio: 10
+    sizeRatio: 10,
+    useGradient: true,
+    useShadow: true,
+    tooltipColor: '#FFFFFF',
+    iconColor: '#1A1A1A'
 })
 
 const emit = defineEmits(['change', 'selectItem', 'triggerAction', 'delete'])
@@ -286,11 +290,15 @@ function deleteEntity() {
     emit('delete', entity.value)
 }
 
+const activeEntityCoordinates = computed(() => {
+    return `${gridCoordinates.value.abs[entity.value.x]}-${gridCoordinates.value.ord[entity.value.y]}, ${gridCoordinates.value.abs[entity.value.x + entity.value.w - 1]}-${gridCoordinates.value.ord[entity.value.y + entity.value.h - 1]}`
+})
+
 </script>
 
 <template>
     <svg :viewBox="`-1 -1 ${width+2} ${height+2}`" width="100%" ref="SVG" @mousemove="move" @mouseup="drop" @touchmove="move" 
-        @touchend="drop">
+        @touchend="drop" style="overflow: visible;">
         <!-- GRID COORDINATES -->
         <text 
             v-for="(absCord, i) in gridCoordinates.abs"
@@ -363,8 +371,32 @@ function deleteEntity() {
             :height="placedItem.h"
             :width="placedItem.w"
             :fill="placedItem.color"
+            :stroke="config.gridStroke"
+            :stroke-width="config.gridStrokeWidth"
             @click="selectItem(placedItem)"
+            :class="{ 'entity': true }"
         />
+
+        <defs>
+            <radialGradient id="entityGradient" cx="30%" cy="30%" fx="0%" fy="0%">
+                <stop offset="0%" stop-color="#FFFFFF00" />
+                <stop offset="100%" stop-color="#FFFFFF20" />
+            </radialGradient>
+        </defs>
+
+        <g v-if="config.useGradient">
+            <rect 
+                v-for="placedItem in items"
+                :x="placedItem.x + 0.2"
+                :y="placedItem.y + 0.2"
+                :height="placedItem.h - 0.4"
+                :width="placedItem.w - 0.4"
+                fill="url(#entityGradient)"
+                stroke="none"
+                style="pointer-events: none;"
+            />
+        </g>
+
 
         <!-- ACTIVE ENTITY -->
         <rect
@@ -373,23 +405,52 @@ function deleteEntity() {
             :y="entity.y" 
             :width="entity.w" 
             :height="entity.h" 
-            :fill="config.entityFill" 
+            :fill="config.entityFill"
+            :stroke="config.gridStroke"
+            :stroke-width="config.gridStrokeWidth"
             @mousedown="isDown = true" 
             @touchstart="isDown = true"
-            :class="{ 'selected' : isDown }"
+            :class="{ 'shadow': config.useShadow, 'entity': true }"
+            style="cursor: move"
         />
 
+        <g v-if="config.useGradient && activeEntity && activeEntity.x !== undefined">
+            <rect 
+                :x="entity.x + 0.2"
+                :y="entity.y + 0.2"
+                :height="entity.h - 0.4"
+                :width="entity.w - 0.4"
+                fill="url(#entityGradient)"
+                stroke="none"
+                style="pointer-events: none;"
+            />
+        </g>
+
         <text 
-            v-for="placedItem in [...items, entity]"
-            :x="placedItem.x + placedItem.w / 2"
-            :y="placedItem.y + placedItem.h / 2 + 0.2"
+            v-if="activeEntity && activeEntity.x !== undefined"
+            :x="entity.x + entity.w - entity.w / 2"
+            :y="entity.y + entity.h + 1"
             :font-size="0.6"
-            :fill="'black'"
+            :fill="config.tooltipColor"
             style="pointer-events: none;"
             text-anchor="middle"
         >
-            <slot name="componentItem" v-bind="{placedItem}"/>
+            {{ activeEntityCoordinates }}
         </text>
+
+        <g v-for="placedItem in [...items, entity]">
+            <text 
+                v-if="placedItem.x !== undefined"
+                :x="placedItem.x + placedItem.w / 2"
+                :y="placedItem.y + placedItem.h / 2 + 0.2"
+                :font-size="0.6"
+                :fill="config.iconColor"
+                style="pointer-events: none;"
+                text-anchor="middle"
+            >
+                <slot name="componentItem" v-bind="{placedItem, iconColor: config.iconColor}"/>
+            </text>
+        </g>
 
         <!-- HANDLES -->
         <g v-if="activeEntity && activeEntity.x !== undefined">
@@ -401,6 +462,7 @@ function deleteEntity() {
                 :width="config.handleSize" 
                 @mousedown.prevent="startResize('top-left')"
                 @touchstart.prevent="startResize('top-left')"
+                style="cursor: nwse-resize"
             />
             <rect 
                 :x="entity.x + entity.w - config.handleSize / 2" 
@@ -410,6 +472,7 @@ function deleteEntity() {
                 :width="config.handleSize" 
                 @mousedown.prevent="startResize('top-right')"
                 @touchstart.prevent="startResize('top-right')"
+                style="cursor: nesw-resize"
             />
             <rect 
                 :x="entity.x - config.handleSize / 2" 
@@ -419,6 +482,7 @@ function deleteEntity() {
                 :width="config.handleSize" 
                 @mousedown.prevent="startResize('bottom-left')"
                 @touchstart.prevent="startResize('bottom-left')"
+                style="cursor: nesw-resize"
             />
             <rect 
                 :x="entity.x + entity.w - config.handleSize / 2" 
@@ -428,12 +492,13 @@ function deleteEntity() {
                 :width="config.handleSize" 
                 @mousedown.prevent="startResize('bottom-right')"
                 @touchstart.prevent="startResize('bottom-right')"
+                style="cursor: nwse-resize"
             />
         </g>
 
         <!-- BUTTONS -->
         <circle 
-            v-if="activeEntity && activeEntity.x"
+            v-if="activeEntity && activeEntity.x !== undefined"
             :cx="entity.x + entity.w - 0.5"
             :cy="entity.y - 1"
             :r="0.5"
@@ -441,28 +506,28 @@ function deleteEntity() {
             @click="deleteEntity"
             style="cursor: pointer"
         />
-            <line
-                v-if="activeEntity && activeEntity.x"
-                :x1="entity.x + entity.w - 0.75"
-                :x2="entity.x + entity.w - 0.25"
-                :y1="entity.y - 0.75"
-                :y2="entity.y - 1.25"
-                :stroke="'white'"
-                :stroke-width="0.09"
-                stroke-linecap="round"
-                style="pointer-events: none;"
-            />
-            <line
-                v-if="activeEntity && activeEntity.x"
-                :x2="entity.x + entity.w - 0.75"
-                :x1="entity.x + entity.w - 0.25"
-                :y1="entity.y - 0.75"
-                :y2="entity.y - 1.25"
-                :stroke="'white'"
-                :stroke-width="0.09"
-                stroke-linecap="round"
-                style="pointer-events: none;"
-            />
+        <line
+            v-if="activeEntity && activeEntity.x !== undefined"
+            :x1="entity.x + entity.w - 0.75"
+            :x2="entity.x + entity.w - 0.25"
+            :y1="entity.y - 0.75"
+            :y2="entity.y - 1.25"
+            :stroke="'white'"
+            :stroke-width="0.09"
+            stroke-linecap="round"
+            style="pointer-events: none;"
+        />
+        <line
+            v-if="activeEntity && activeEntity.x !== undefined"
+            :x2="entity.x + entity.w - 0.75"
+            :x1="entity.x + entity.w - 0.25"
+            :y1="entity.y - 0.75"
+            :y2="entity.y - 1.25"
+            :stroke="'white'"
+            :stroke-width="0.09"
+            stroke-linecap="round"
+            style="pointer-events: none;"
+        />
     </svg>
 </template>
 
@@ -471,7 +536,17 @@ svg {
     border: 1px solid grey;
 }
 
-rect {
+/* rect, circle, line {
     transition: all 0.05s ease-in-out;
+} */
+
+text {
+    user-select: none;
+}
+
+.shadow {
+  -webkit-filter: drop-shadow(0px 1px 0.5px rgba(0, 0, 0, 0.6));
+  filter: drop-shadow(0px 0px 0.5px rgba(0, 0, 0, 0.6));
+  /* Similar syntax to box-shadow */
 }
 </style>
